@@ -187,7 +187,7 @@
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 contents: [{ role: "user", parts: [{ text: `${system}\n\n${user}` }] }],
-                generationConfig: { maxOutputTokens: 1000 },
+                generationConfig: { maxOutputTokens: 8000 },
               }),
             }
           );

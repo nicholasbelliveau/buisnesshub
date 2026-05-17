@@ -17,7 +17,7 @@
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState } = React;
+    const { useState, useEffect } = React;
 
     const TABS = [
       { id: "proposals", label: "📄 Proposals" },
@@ -31,14 +31,14 @@
 
     const PKGS = {
       "Tattoo Artist": [
-        { name: "Starter", price: 299, monthly: null, features: ["Portfolio (20 images)", "Policy & FAQ page", "Contact form", "Mobile responsive", "Basic SEO", "Instagram bio link page"] },
-        { name: "Pro",     price: 599, monthly: 49,  popular: true, features: ["Everything in Starter", "Booking page embed", "Flash art gallery", "Instagram feed", "Google Business setup", "Custom domain setup"] },
-        { name: "Elite",   price: 999, monthly: 79,  features: ["Everything in Pro", "EmailJS auto-replies", "Advanced local SEO", "Custom animations", "3 months maintenance", "Priority support"] },
+        { name: "Starter", price: 299, monthly: null,  features: ["Portfolio (20 images)", "Policy & FAQ page", "Contact form", "Mobile responsive", "Basic SEO", "Instagram bio link page"] },
+        { name: "Pro",     price: 599, monthly: 49,   popular: true, features: ["Everything in Starter", "Booking page embed", "Flash art gallery", "Instagram feed", "Google Business setup", "Custom domain setup"] },
+        { name: "Elite",   price: 999, monthly: 79,   features: ["Everything in Pro", "EmailJS auto-replies", "Advanced local SEO", "Custom animations", "3 months maintenance", "Priority support"] },
       ],
       "Barbershop": [
-        { name: "Starter", price: 349,  monthly: null, features: ["Team profiles & intro", "Services menu", "Contact form", "Mobile responsive", "Basic SEO", "Google Maps embed"] },
-        { name: "Pro",     price: 649,  monthly: 49,  popular: true, features: ["Everything in Starter", "Online booking system", "Team portfolio pages", "Google Business setup", "Custom domain setup"] },
-        { name: "Elite",   price: 1149, monthly: 99,  features: ["Everything in Pro", "EmailJS booking confirm", "Advanced local SEO", "Instagram feed", "3 months maintenance", "Priority support"] },
+        { name: "Starter", price: 349,  monthly: null,  features: ["Team profiles & intro", "Services menu", "Contact form", "Mobile responsive", "Basic SEO", "Google Maps embed"] },
+        { name: "Pro",     price: 649,  monthly: 49,   popular: true, features: ["Everything in Starter", "Online booking system", "Team portfolio pages", "Google Business setup", "Custom domain setup"] },
+        { name: "Elite",   price: 1149, monthly: 99,   features: ["Everything in Pro", "EmailJS booking confirm", "Advanced local SEO", "Instagram feed", "3 months maintenance", "Priority support"] },
       ],
     };
 
@@ -126,33 +126,102 @@
       );
     }
 
+    // ── API key setup screen ──
+    function SetupScreen({ onSave }) {
+      const [key, setKey] = useState("");
+      return (
+        <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+          <div style={{ background: "#fff", borderRadius: 16, border: "1px solid #e5e7eb", padding: "2rem", maxWidth: 480, width: "100%" }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>One-time setup</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "#111827", marginBottom: 8 }}>Add your Gemini API key</div>
+            <p style={{ fontSize: 14, color: "#6b7280", marginBottom: 24, lineHeight: 1.6 }}>
+              Get a free key at <a href="https://aistudio.google.com" target="_blank" style={{ color: "#6366f1" }}>aistudio.google.com</a> → Get API key → Create API key. Paste it below. This is saved to your browser and never sent anywhere except Google.
+            </p>
+            <Field label="Gemini API key">
+              <input
+                style={iStyle}
+                value={key}
+                onChange={e => setKey(e.target.value)}
+                placeholder="AIza..."
+                type="password"
+              />
+            </Field>
+            <button
+              onClick={() => { if (key.trim()) { localStorage.setItem("GEMINI_KEY", key.trim()); onSave(key.trim()); } }}
+              disabled={!key.trim()}
+              style={{ width: "100%", background: key.trim() ? "#111827" : "#9ca3af", color: "#fff", border: "none", borderRadius: 8, padding: "11px 20px", fontSize: 14, fontWeight: 600, cursor: key.trim() ? "pointer" : "not-allowed", marginTop: 4 }}
+            >
+              Save and open my hub →
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     function App() {
+      const [apiKey, setApiKey]   = useState(null);
+      const [showSettings, setShowSettings] = useState(false);
       const [active, setActive]   = useState("proposals");
       const [bizType, setBizType] = useState("Tattoo Artist");
       const [form, setForm]       = useState({});
       const [outputs, setOutputs] = useState({});
       const [loading, setLoading] = useState(false);
 
+      useEffect(() => {
+        const saved = localStorage.getItem("GEMINI_KEY");
+        if (saved) setApiKey(saved);
+      }, []);
+
       const v   = (k) => form[k] || "";
       const set = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
 
-      // Sends { system, user } to the Cloudflare function which calls Gemini
       const generate = async (section, system, user) => {
-        if (loading) return;
+        if (loading || !apiKey) return;
         setLoading(true);
         setOutputs((p) => ({ ...p, [section]: "" }));
         try {
-          const res  = await fetch("/generate", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ system, user }),
-          });
+          const res = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                system_instruction: { parts: [{ text: system }] },
+                contents: [{ role: "user", parts: [{ text: user }] }],
+                generationConfig: { maxOutputTokens: 1000 },
+              }),
+            }
+          );
           const data = await res.json();
-          setOutputs((p) => ({ ...p, [section]: data.text || data.error || "No response returned." }));
+          const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          const err  = data.error?.message;
+          setOutputs((p) => ({ ...p, [section]: text || err || "No response returned." }));
         } catch (err) {
           setOutputs((p) => ({ ...p, [section]: "Error: " + err.message }));
         }
         setLoading(false);
+      };
+
+      if (!apiKey) return <SetupScreen onSave={setApiKey} />;
+
+      // ── Settings modal ──
+      const SettingsModal = () => {
+        const [newKey, setNewKey] = useState(apiKey);
+        return (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 999, padding: 24 }}>
+            <div style={{ background: "#fff", borderRadius: 16, border: "1px solid #e5e7eb", padding: "2rem", maxWidth: 480, width: "100%" }}>
+              <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 16 }}>Update API key</div>
+              <Field label="Gemini API key">
+                <input style={iStyle} value={newKey} onChange={e => setNewKey(e.target.value)} type="password" />
+              </Field>
+              <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                <button onClick={() => setShowSettings(false)} style={{ flex: 1, background: "#f3f4f6", color: "#374151", border: "none", borderRadius: 8, padding: "10px", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
+                <button onClick={() => { localStorage.setItem("GEMINI_KEY", newKey.trim()); setApiKey(newKey.trim()); setShowSettings(false); }}
+                  style={{ flex: 1, background: "#111827", color: "#fff", border: "none", borderRadius: 8, padding: "10px", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Save</button>
+              </div>
+            </div>
+          </div>
+        );
       };
 
       const renderProposals = () => (
@@ -282,23 +351,29 @@
       const sections = { proposals: renderProposals, copy: renderCopy, seo: renderSEO, pricing: renderPricing, prompts: renderPrompts, deploy: renderDeploy, workflow: renderWorkflow };
 
       return (
-        <div style={{ maxWidth: 760, margin: "0 auto", padding: "28px 16px 60px" }}>
-          <div style={{ marginBottom: 24 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>Business hub</div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: "#111827" }}>Web services · tattoo & barber</div>
+        <>
+          {showSettings && <SettingsModal />}
+          <div style={{ maxWidth: 760, margin: "0 auto", padding: "28px 16px 60px" }}>
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24 }}>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>Business hub</div>
+                <div style={{ fontSize: 22, fontWeight: 700, color: "#111827" }}>Web services · tattoo & barber</div>
+              </div>
+              <button onClick={() => setShowSettings(true)} style={{ background: "#f3f4f6", border: "1px solid #e5e7eb", borderRadius: 8, padding: "7px 12px", fontSize: 12, color: "#6b7280", cursor: "pointer", fontWeight: 600, marginTop: 4 }}>⚙️ API key</button>
+            </div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 24 }}>
+              {TABS.map(tab => (
+                <button key={tab.id} onClick={() => setActive(tab.id)} style={{ padding: "7px 14px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer", border: active===tab.id?"2px solid #111827":"1px solid #e5e7eb", background: active===tab.id?"#111827":"#fff", color: active===tab.id?"#fff":"#6b7280" }}>
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+            <p style={{ fontSize: 13, color: "#6b7280", marginBottom: 20, marginTop: 0 }}>{DESC[active]}</p>
+            <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e5e7eb", padding: "20px" }}>
+              {sections[active]?.()}
+            </div>
           </div>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 24 }}>
-            {TABS.map(tab => (
-              <button key={tab.id} onClick={() => setActive(tab.id)} style={{ padding: "7px 14px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer", border: active===tab.id?"2px solid #111827":"1px solid #e5e7eb", background: active===tab.id?"#111827":"#fff", color: active===tab.id?"#fff":"#6b7280" }}>
-                {tab.label}
-              </button>
-            ))}
-          </div>
-          <p style={{ fontSize: 13, color: "#6b7280", marginBottom: 20, marginTop: 0 }}>{DESC[active]}</p>
-          <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e5e7eb", padding: "20px" }}>
-            {sections[active]?.()}
-          </div>
-        </div>
+        </>
       );
     }
 

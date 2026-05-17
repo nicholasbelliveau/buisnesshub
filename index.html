@@ -181,13 +181,12 @@
         setOutputs((p) => ({ ...p, [section]: "" }));
         try {
           const res = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`,
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                system_instruction: { parts: [{ text: system }] },
-                contents: [{ role: "user", parts: [{ text: user }] }],
+                contents: [{ role: "user", parts: [{ text: `${system}\n\n${user}` }] }],
                 generationConfig: { maxOutputTokens: 1000 },
               }),
             }

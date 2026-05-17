@@ -308,16 +308,60 @@
 
       const renderPrompts = () => (
         <>
+          <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, padding: "10px 14px", fontSize: 13, color: "#166534", marginBottom: 16 }}>
+            💡 Answer these honestly — the more specific you are, the more unique and premium the output will be.
+          </div>
           <Grid2>
-            <Field label="Business type"><Sel value={v("dbt")  || "Tattoo Artist"} onChange={set("dbt")}    options={["Tattoo Artist","Barbershop"]} /></Field>
-            <Field label="Package tier"> <Sel value={v("dpkg") || "Pro"}           onChange={set("dpkg")}   options={["Starter","Pro","Elite"]} /></Field>
-            <Field label="Visual style / vibe"><Inp value={v("dvibe")}   onChange={set("dvibe")}   placeholder="dark, minimal, bold, classic..." /></Field>
-            <Field label="Brand colors">      <Inp value={v("dcolors")} onChange={set("dcolors")} placeholder="black, gold, white..." /></Field>
+            <Field label="Business name"><Inp value={v("dbiz")} onChange={set("dbiz")} placeholder="Katenowlan Tattoo" /></Field>
+            <Field label="Business type"><Sel value={v("dbt") || "Tattoo Artist"} onChange={set("dbt")} options={["Tattoo Artist","Barbershop"]} /></Field>
+            <Field label="Package tier"><Sel value={v("dpkg") || "Pro"} onChange={set("dpkg")} options={["Starter","Pro","Elite"]} /></Field>
+            <Field label="Primary brand colors"><Inp value={v("dcolors")} onChange={set("dcolors")} placeholder="e.g. dusty rose, black, cream" /></Field>
           </Grid2>
-          <Field label="Special features or notes"><Ta value={v("dnotes")} onChange={set("dnotes")} placeholder="Instagram feed, deposit form, flash lightbox..." /></Field>
-          <GenBtn loading={loading} label="Generate Claude Code prompt ↗" onClick={() => generate("prompts",
-            "You generate detailed, copy-paste-ready prompts for Claude Code. Output a single comprehensive build prompt specifying tech stack (vanilla HTML/CSS/JS, no frameworks), file structure, all pages needed, navigation, color palette, fonts, every interactive feature, and mobile responsiveness.",
-            `Type: ${v("dbt")||"Tattoo Artist"}\nPackage: ${v("dpkg")||"Pro"}\nVibe: ${v("dvibe")||"dark and minimal"}\nColors: ${v("dcolors")||"black and gold"}\nFeatures: ${v("dnotes")||"standard features"}\n\nGenerate a complete, detailed Claude Code prompt to build this website. Make it ready to paste.`
+          <Field label={`If their work was a music genre, what would it be?`}>
+            <Inp value={v("dgenre")} onChange={set("dgenre")} placeholder="e.g. dark folk, lo-fi hip hop, classical, heavy metal, jazz..." />
+          </Field>
+          <Field label="3 words their dream client would use to describe their style">
+            <Inp value={v("dwords")} onChange={set("dwords")} placeholder="e.g. delicate, feminine, nostalgic — or bold, raw, expressive" />
+          </Field>
+          <Field label="Who is their dream client?">
+            <Inp value={v("dclient")} onChange={set("dclient")} placeholder="e.g. women 25-35 who love cottagecore and floral aesthetics" />
+          </Field>
+          <Field label="How should visitors FEEL when they land on the page?">
+            <Inp value={v("dfeel")} onChange={set("dfeel")} placeholder="e.g. like they discovered a hidden gem, calm and inspired, edgy and excited" />
+          </Field>
+          <Field label="Any websites or artists they admire the look of? (optional)">
+            <Inp value={v("drefs")} onChange={set("drefs")} placeholder="e.g. sarahakwabi.com, Studio Ghibli aesthetic, Notion-style clean..." />
+          </Field>
+          <Field label="Special features needed">
+            <Ta value={v("dfeatures")} onChange={set("dfeatures")} placeholder="e.g. flash sale gallery, booking form, Instagram feed, policy page..." />
+          </Field>
+          <GenBtn loading={loading} label="Generate design brief ↗" onClick={() => generate("prompts",
+            `You are a senior creative director and web designer who builds $10,000+ websites for creative professionals. You write design briefs so precise and evocative that any developer or AI design tool can produce something genuinely beautiful and unique from them.
+
+Your briefs NEVER use generic phrases like "modern", "clean", "professional", "sleek", or "elegant" without specific context. Instead you describe:
+- The exact emotional journey a visitor takes through the site
+- Typography with specificity (font personalities, size hierarchy, weight contrast)
+- Color with hex values and emotional intent
+- Animations and transitions described as choreography, not just "smooth"
+- How images are treated (full bleed, masked, layered, breathing)
+- The scroll experience section by section
+- What makes THIS site impossible to mistake for a template
+
+Output a single, complete, copy-paste-ready prompt for Claude Design or Claude Code. Make it feel like a creative brief from a world-class agency.`,
+            `Create a premium website design brief for:
+
+Business: ${v("dbiz")||"this business"}
+Type: ${v("dbt")||"Tattoo Artist"}
+Package: ${v("dpkg")||"Pro"}
+Brand colors: ${v("dcolors")||"not specified"}
+If their work was music: ${v("dgenre")||"not specified"}
+3 words dream clients use: ${v("dwords")||"not specified"}
+Dream client: ${v("dclient")||"not specified"}
+How visitors should feel: ${v("dfeel")||"not specified"}
+References/inspirations: ${v("drefs")||"none"}
+Special features: ${v("dfeatures")||"standard portfolio and booking"}
+
+Generate a complete, highly specific, evocative design brief that will produce a website that looks nothing like a template. Include the full visual language, typography direction, animation choreography, color palette with hex codes, section-by-section scroll experience, and all technical features. Make it ready to paste directly into Claude Design.`
           )} />
           {outputs.prompts && <OutputBox text={outputs.prompts} />}
         </>

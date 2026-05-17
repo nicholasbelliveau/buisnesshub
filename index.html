@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Web Services Hub — Tattoo & Barber</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif; background: #f3f4f6; min-height: 100vh; }
+    input, select, textarea, button, pre { font-family: inherit; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState } = React;
+
+    const TABS = [
+      { id: "proposals", label: "📄 Proposals" },
+      { id: "copy",      label: "✏️ Website Copy" },
+      { id: "seo",       label: "🔍 SEO" },
+      { id: "pricing",   label: "🏷️ Pricing" },
+      { id: "prompts",   label: "💻 Dev Prompts" },
+      { id: "deploy",    label: "🚀 Deploy" },
+      { id: "workflow",  label: "✅ Workflow" },
+    ];
+
+    const PKGS = {
+      "Tattoo Artist": [
+        { name: "Starter", price: 299, monthly: null, features: ["Portfolio (20 images)", "Policy & FAQ page", "Contact form", "Mobile responsive", "Basic SEO", "Instagram bio link page"] },
+        { name: "Pro",     price: 599, monthly: 49,  popular: true, features: ["Everything in Starter", "Booking page embed", "Flash art gallery", "Instagram feed", "Google Business setup", "Custom domain setup"] },
+        { name: "Elite",   price: 999, monthly: 79,  features: ["Everything in Pro", "EmailJS auto-replies", "Advanced local SEO", "Custom animations", "3 months maintenance", "Priority support"] },
+      ],
+      "Barbershop": [
+        { name: "Starter", price: 349,  monthly: null, features: ["Team profiles & intro", "Services menu", "Contact form", "Mobile responsive", "Basic SEO", "Google Maps embed"] },
+        { name: "Pro",     price: 649,  monthly: 49,  popular: true, features: ["Everything in Starter", "Online booking system", "Team portfolio pages", "Google Business setup", "Custom domain setup"] },
+        { name: "Elite",   price: 1149, monthly: 99,  features: ["Everything in Pro", "EmailJS booking confirm", "Advanced local SEO", "Instagram feed", "3 months maintenance", "Priority support"] },
+      ],
+    };
+
+    const DEPLOY = [
+      { title: "GitHub — version control & backup", steps: ["Create a free account at github.com", "New private repo: [clientname]-website", "In VS Code: Source Control → Initialize → Push to GitHub", "Every push is an automatic backup of all your code", "Clients never get repo access — you own the code"] },
+      { title: "Cloudflare Pages — free hosting + SSL", steps: ["Create account at cloudflare.com", "Pages → Create project → Connect to GitHub repo", "Every GitHub push auto-deploys to a live URL", "SSL certificate activates automatically", "Add custom domain: Pages → Custom domains"] },
+      { title: "VS Code — your build environment", steps: ["Install: Live Server extension (local preview)", "Install: Prettier (auto-format code)", "Folder structure: /index.html /css /js /images", "Use Live Server to test before pushing to Cloudflare", "One folder per client, one GitHub repo per client"] },
+      { title: "EmailJS — contact forms, no backend needed", steps: ["Sign up free at emailjs.com (200 emails/month)", "Create Email Service → connect your Gmail", "Create template: 'New booking from {{name}}'", "Grab Service ID, Template ID, Public Key → paste into JS", "Always test with a real form submission before launch"] },
+      { title: "Booking tools — scheduling integrations", steps: ["Calendly: free tier, easiest — just an iframe embed", "Square Appointments: free, handles payments too", "GlossGenius: built for tattoo artists, takes deposits", "Boulevard: built specifically for barbershops", "Embed as a button or iframe — zero backend work needed"] },
+      { title: "Instagram feeds & art galleries", steps: ["Behold.so: best free Instagram feed embed option", "EmbedSocial: more control, paid plans available", "Flash/portfolio lightbox: use GLightbox (free, open source)", "Optimize all images at squoosh.app before uploading", "Client connects their own Instagram — you never need their login"] },
+    ];
+
+    const WORKFLOW = [
+      { phase: "1 — Package approved",   color: "#10b981", items: ["Send contract via DocuSign or a signed Google Doc", "Collect 50% deposit — Stripe, PayPal, or e-transfer", "Register their domain in YOUR Cloudflare or Namecheap account", "Create private GitHub repo: [clientname]-site", "Set up Cloudflare Pages project and connect to the repo", "Send intake form: logo, brand colors, photos, any copy they have"] },
+      { phase: "2 — During the build",   color: "#f59e0b", items: ["Build locally in VS Code with Live Server", "Push to GitHub → auto-deploys to staging URL (*.pages.dev)", "Share the staging link with client for feedback rounds", "Two revision rounds included — document any extras in writing", "Set up EmailJS, booking embed, Instagram feed (per package)", "Get written sign-off before going live"] },
+      { phase: "3 — Launch day",          color: "#6366f1", items: ["Collect the remaining 50% before flipping the switch", "Point custom domain DNS to Cloudflare Pages", "SSL activates automatically — usually under 5 minutes", "Submit site to Google Search Console for indexing", "Set up or claim and optimize Google Business Profile", "Final checks: PageSpeed Insights, mobile view, all forms working"] },
+      { phase: "4 — You own everything", color: "#ec4899", items: ["You own: GitHub repo, domain, Cloudflare account, all code", "Client gets: login to their booking tool only (Calendly, Square, etc.)", "Monthly maintenance fee = they pay you to keep it running", "If they stop paying: you control DNS — site goes offline", "Never transfer domain ownership until full payment + contract ends", "Upsell: blog posts, seasonal promos, SEO audits — bill separately"] },
+    ];
+
+    const DESC = {
+      proposals: "Generate a professional proposal to send to a new potential client.",
+      copy:      "Write website copy that fits each client's brand voice and style.",
+      seo:       "Build a local SEO strategy to help your clients rank on Google.",
+      pricing:   "Your package tiers — reference these when talking to any client.",
+      prompts:   "Generate a detailed prompt to build the site in Claude Code.",
+      deploy:    "Step-by-step guides for every tool in your tech stack.",
+      workflow:  "Exactly what to do from package approval through site ownership.",
+    };
+
+    const iStyle = { width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 14, background: "#fff", color: "#111", outline: "none", boxSizing: "border-box", fontFamily: "inherit" };
+    const lStyle = { display: "block", fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 5, textTransform: "uppercase", letterSpacing: "0.05em" };
+
+    function Field({ label, children }) {
+      return <div style={{ marginBottom: 12 }}><label style={lStyle}>{label}</label>{children}</div>;
+    }
+    function Inp({ value, onChange, placeholder }) {
+      return <input style={iStyle} value={value} onChange={onChange} placeholder={placeholder} />;
+    }
+    function Sel({ value, onChange, options }) {
+      return <select style={iStyle} value={value} onChange={onChange}>{options.map(o => <option key={o}>{o}</option>)}</select>;
+    }
+    function Ta({ value, onChange, placeholder }) {
+      return <textarea style={{ ...iStyle, height: 68, resize: "vertical" }} value={value} onChange={onChange} placeholder={placeholder} />;
+    }
+    function Grid2({ children }) {
+      return <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>{children}</div>;
+    }
+    function GenBtn({ onClick, loading, label }) {
+      return (
+        <button onClick={onClick} disabled={loading} style={{ width: "100%", background: loading ? "#9ca3af" : "#111827", color: "#fff", border: "none", borderRadius: 8, padding: "11px 20px", fontSize: 14, fontWeight: 600, cursor: loading ? "not-allowed" : "pointer", marginTop: 4, marginBottom: 16 }}>
+          {loading ? "Generating..." : label}
+        </button>
+      );
+    }
+    function OutputBox({ text }) {
+      const [copied, setCopied] = useState(false);
+      return (
+        <div style={{ background: "#f9fafb", borderRadius: 10, border: "1px solid #e5e7eb", padding: "1rem", position: "relative" }}>
+          <button onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+            style={{ position: "absolute", top: 10, right: 10, background: "#fff", border: "1px solid #d1d5db", borderRadius: 6, padding: "4px 10px", fontSize: 12, cursor: "pointer", color: "#374151" }}>
+            {copied ? "✓ Copied!" : "Copy"}
+          </button>
+          <pre style={{ whiteSpace: "pre-wrap", fontSize: 13, lineHeight: 1.75, color: "#1f2937", margin: 0, fontFamily: "inherit", paddingTop: 28 }}>{text}</pre>
+        </div>
+      );
+    }
+    function Accordion({ items, renderHeader, renderBody }) {
+      const [open, setOpen] = useState(null);
+      return (
+        <div>
+          {items.map((item, i) => (
+            <div key={i} style={{ marginBottom: 8 }}>
+              <button onClick={() => setOpen(open === i ? null : i)} style={{ width: "100%", background: "#fff", border: "1px solid #e5e7eb", borderRadius: open === i ? "8px 8px 0 0" : 8, padding: "12px 16px", display: "flex", alignItems: "center", gap: 10, cursor: "pointer", textAlign: "left" }}>
+                {renderHeader(item)}
+                <span style={{ marginLeft: "auto", color: "#9ca3af" }}>{open === i ? "▲" : "▼"}</span>
+              </button>
+              {open === i && (
+                <div style={{ background: "#f9fafb", border: "1px solid #e5e7eb", borderTop: "none", borderRadius: "0 0 8px 8px", padding: "14px 16px" }}>
+                  {renderBody(item)}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    function App() {
+      const [active, setActive]   = useState("proposals");
+      const [bizType, setBizType] = useState("Tattoo Artist");
+      const [form, setForm]       = useState({});
+      const [outputs, setOutputs] = useState({});
+      const [loading, setLoading] = useState(false);
+
+      const v   = (k) => form[k] || "";
+      const set = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
+
+      // Sends { system, user } to the Cloudflare function which calls Gemini
+      const generate = async (section, system, user) => {
+        if (loading) return;
+        setLoading(true);
+        setOutputs((p) => ({ ...p, [section]: "" }));
+        try {
+          const res  = await fetch("/generate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ system, user }),
+          });
+          const data = await res.json();
+          setOutputs((p) => ({ ...p, [section]: data.text || data.error || "No response returned." }));
+        } catch (err) {
+          setOutputs((p) => ({ ...p, [section]: "Error: " + err.message }));
+        }
+        setLoading(false);
+      };
+
+      const renderProposals = () => (
+        <>
+          <Grid2>
+            <Field label="Client name">   <Inp value={v("cn")}  onChange={set("cn")}  placeholder="Ink & Iron Tattoo" /></Field>
+            <Field label="Location">      <Inp value={v("loc")} onChange={set("loc")} placeholder="Moncton, NB" /></Field>
+            <Field label="Business type"> <Sel value={v("pbt")  || "Tattoo Artist"} onChange={set("pbt")}  options={["Tattoo Artist","Barbershop"]} /></Field>
+            <Field label="Package">       <Sel value={v("ppkg") || "Pro"}           onChange={set("ppkg")} options={["Starter","Pro","Elite"]} /></Field>
+          </Grid2>
+          <Field label="Notes / special requests"><Ta value={v("pnotes")} onChange={set("pnotes")} placeholder="Anything specific about this client..." /></Field>
+          <GenBtn loading={loading} label="Generate proposal ↗" onClick={() => generate("proposals",
+            "You write professional web design proposals for a freelance agency serving tattoo artists and barbershops. Be concise and persuasive. Use markdown formatting.",
+            `Client: ${v("cn")||"the client"}\nType: ${v("pbt")||"Tattoo Artist"}\nLocation: ${v("loc")||"local"}\nPackage: ${v("ppkg")||"Pro"}\nNotes: ${v("pnotes")||"none"}\n\nWrite a complete proposal: intro, what's included, 1–2 week timeline, package pricing, 50/50 payment terms, and a clear call to action.`
+          )} />
+          {outputs.proposals && <OutputBox text={outputs.proposals} />}
+        </>
+      );
+
+      const renderCopy = () => (
+        <>
+          <Grid2>
+            <Field label="Business name">     <Inp value={v("cname")}  onChange={set("cname")}  placeholder="Sharp & Clean Barbershop" /></Field>
+            <Field label="Owner / artist name"><Inp value={v("cowner")} onChange={set("cowner")} placeholder="Marcus" /></Field>
+            <Field label="Business type"><Sel value={v("ctype") || "Tattoo Artist"} onChange={set("ctype")} options={["Tattoo Artist","Barbershop"]} /></Field>
+            <Field label="Vibe / aesthetic"><Inp value={v("cvibe")} onChange={set("cvibe")} placeholder="dark & edgy, modern & clean..." /></Field>
+          </Grid2>
+          <Field label="Key services / specialties"><Ta value={v("csvc")} onChange={set("csvc")} placeholder="blackwork, fine line, traditional..." /></Field>
+          <GenBtn loading={loading} label="Generate copy ↗" onClick={() => generate("copy",
+            "You write punchy, authentic website copy for tattoo studios and barbershops. No corporate language. Match the brand voice. Markdown formatting.",
+            `Business: ${v("cname")||"the business"}\nOwner: ${v("cowner")||"the owner"}\nType: ${v("ctype")||"Tattoo Artist"}\nVibe: ${v("cvibe")||"professional"}\nServices: ${v("csvc")||"various"}\n\nWrite: hero headline + subheadline, about section (2–3 sentences), services section intro, and a booking CTA. Real and specific — not generic.`
+          )} />
+          {outputs.copy && <OutputBox text={outputs.copy} />}
+        </>
+      );
+
+      const renderSEO = () => (
+        <>
+          <Grid2>
+            <Field label="Business name"><Inp value={v("sname")} onChange={set("sname")} placeholder="Steel & Ink" /></Field>
+            <Field label="City / region"> <Inp value={v("sloc")}  onChange={set("sloc")}  placeholder="Moncton, NB" /></Field>
+          </Grid2>
+          <Field label="Business type"><Sel value={v("stype") || "Tattoo Artist"} onChange={set("stype")} options={["Tattoo Artist","Barbershop"]} /></Field>
+          <Field label="Key services / style (optional)"><Inp value={v("ssvc")} onChange={set("ssvc")} placeholder="fine line, blackwork, traditional..." /></Field>
+          <GenBtn loading={loading} label="Generate SEO strategy ↗" onClick={() => generate("seo",
+            "You are a local SEO specialist for small creative businesses. Give practical, actionable advice. Use markdown with clear sections.",
+            `Business: ${v("sname")||"this business"}\nType: ${v("stype")||"Tattoo Artist"}\nLocation: ${v("sloc")||"local area"}\nServices: ${v("ssvc")||"general"}\n\nProvide:\n1. Top 10 local keywords with search intent notes\n2. Homepage title tag and meta description\n3. 5 specific Google Business Profile optimization tips\n4. 3 local citation directories to list on\n5. One quick win they can do this week`
+          )} />
+          {outputs.seo && <OutputBox text={outputs.seo} />}
+        </>
+      );
+
+      const renderPricing = () => {
+        const pkgs = PKGS[bizType];
+        return (
+          <>
+            <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+              {["Tattoo Artist","Barbershop"].map(t => (
+                <button key={t} onClick={() => setBizType(t)} style={{ padding: "7px 18px", borderRadius: 8, border: bizType===t?"2px solid #111827":"1px solid #d1d5db", background: bizType===t?"#111827":"#fff", color: bizType===t?"#fff":"#374151", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>{t}</button>
+              ))}
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, marginBottom: 16 }}>
+              {pkgs.map(pkg => (
+                <div key={pkg.name} style={{ background: "#fff", borderRadius: 12, border: pkg.popular?"2px solid #6366f1":"1px solid #e5e7eb", padding: "1rem" }}>
+                  {pkg.popular && <div style={{ background: "#eef2ff", color: "#4f46e5", fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 4, display: "inline-block", marginBottom: 8 }}>Most popular</div>}
+                  <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 2 }}>{pkg.name}</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 2 }}>${pkg.price}</div>
+                  <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 12 }}>{pkg.monthly ? `+$${pkg.monthly}/mo` : "one-time"}</div>
+                  {pkg.features.map(ft => (
+                    <div key={ft} style={{ display: "flex", gap: 7, marginBottom: 6, fontSize: 12 }}>
+                      <span style={{ color: "#10b981", flexShrink: 0 }}>✓</span>
+                      <span style={{ color: "#6b7280" }}>{ft}</span>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+            <div style={{ background: "#f3f4f6", borderRadius: 8, padding: "10px 14px", fontSize: 13, color: "#6b7280" }}>
+              <strong style={{ color: "#111827" }}>Add-ons: </strong>
+              Rush delivery (&lt;2 weeks) +$150 · Extra revision round +$75 · Domain setup fee +$25 · Google Business setup only $99
+            </div>
+          </>
+        );
+      };
+
+      const renderPrompts = () => (
+        <>
+          <Grid2>
+            <Field label="Business type"><Sel value={v("dbt")  || "Tattoo Artist"} onChange={set("dbt")}    options={["Tattoo Artist","Barbershop"]} /></Field>
+            <Field label="Package tier"> <Sel value={v("dpkg") || "Pro"}           onChange={set("dpkg")}   options={["Starter","Pro","Elite"]} /></Field>
+            <Field label="Visual style / vibe"><Inp value={v("dvibe")}   onChange={set("dvibe")}   placeholder="dark, minimal, bold, classic..." /></Field>
+            <Field label="Brand colors">      <Inp value={v("dcolors")} onChange={set("dcolors")} placeholder="black, gold, white..." /></Field>
+          </Grid2>
+          <Field label="Special features or notes"><Ta value={v("dnotes")} onChange={set("dnotes")} placeholder="Instagram feed, deposit form, flash lightbox..." /></Field>
+          <GenBtn loading={loading} label="Generate Claude Code prompt ↗" onClick={() => generate("prompts",
+            "You generate detailed, copy-paste-ready prompts for Claude Code. Output a single comprehensive build prompt specifying tech stack (vanilla HTML/CSS/JS, no frameworks), file structure, all pages needed, navigation, color palette, fonts, every interactive feature, and mobile responsiveness.",
+            `Type: ${v("dbt")||"Tattoo Artist"}\nPackage: ${v("dpkg")||"Pro"}\nVibe: ${v("dvibe")||"dark and minimal"}\nColors: ${v("dcolors")||"black and gold"}\nFeatures: ${v("dnotes")||"standard features"}\n\nGenerate a complete, detailed Claude Code prompt to build this website. Make it ready to paste.`
+          )} />
+          {outputs.prompts && <OutputBox text={outputs.prompts} />}
+        </>
+      );
+
+      const renderDeploy = () => (
+        <Accordion items={DEPLOY}
+          renderHeader={item => <span style={{ fontWeight: 600, fontSize: 14, color: "#111827" }}>{item.title}</span>}
+          renderBody={item => item.steps.map((step, j) => (
+            <div key={j} style={{ display: "flex", gap: 10, marginBottom: 8, fontSize: 13 }}>
+              <div style={{ width: 22, height: 22, borderRadius: "50%", background: "#ede9fe", color: "#6d28d9", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>{j+1}</div>
+              <span style={{ color: "#374151", lineHeight: 1.6 }}>{step}</span>
+            </div>
+          ))}
+        />
+      );
+
+      const renderWorkflow = () => (
+        <Accordion items={WORKFLOW}
+          renderHeader={item => <><div style={{ width: 10, height: 10, borderRadius: "50%", background: item.color, flexShrink: 0 }} /><span style={{ fontWeight: 600, fontSize: 14, color: "#111827" }}>{item.phase}</span></>}
+          renderBody={item => item.items.map((step, j) => (
+            <div key={j} style={{ display: "flex", gap: 10, marginBottom: 8, fontSize: 13 }}>
+              <span style={{ color: item.color, fontWeight: 700, flexShrink: 0, marginTop: 2 }}>✓</span>
+              <span style={{ color: "#374151", lineHeight: 1.6 }}>{step}</span>
+            </div>
+          ))}
+        />
+      );
+
+      const sections = { proposals: renderProposals, copy: renderCopy, seo: renderSEO, pricing: renderPricing, prompts: renderPrompts, deploy: renderDeploy, workflow: renderWorkflow };
+
+      return (
+        <div style={{ maxWidth: 760, margin: "0 auto", padding: "28px 16px 60px" }}>
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>Business hub</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: "#111827" }}>Web services · tattoo & barber</div>
+          </div>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 24 }}>
+            {TABS.map(tab => (
+              <button key={tab.id} onClick={() => setActive(tab.id)} style={{ padding: "7px 14px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer", border: active===tab.id?"2px solid #111827":"1px solid #e5e7eb", background: active===tab.id?"#111827":"#fff", color: active===tab.id?"#fff":"#6b7280" }}>
+                {tab.label}
+              </button>
+            ))}
+          </div>
+          <p style={{ fontSize: 13, color: "#6b7280", marginBottom: 20, marginTop: 0 }}>{DESC[active]}</p>
+          <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e5e7eb", padding: "20px" }}>
+            {sections[active]?.()}
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>
